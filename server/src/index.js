@@ -26,7 +26,7 @@ app.use(cookieParser())
 const unlockLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 8, standardHeaders: true, legacyHeaders: false })
 const normalize = value => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase()
 const allowedNames = () => (process.env.ALLOWED_NAMES ?? "").split(",").map(normalize).filter(Boolean)
-const isProduction = process.env.NODE_ENV === "production"
+const isProduction = process.env.NODE_ENV === "production" || clientUrl.startsWith("https://")
 const tokenOptions = { httpOnly: true, sameSite: isProduction ? "none" : "lax", secure: isProduction, maxAge: 7 * 24 * 60 * 60 * 1000 }
 
 const auth = (req, res, next) => {
@@ -232,7 +232,7 @@ if (!supabase) console.warn("Supabase is not configured; database writes will be
 if (!process.env.RESEND_API_KEY || !process.env.MAIL_TO || !process.env.MAIL_FROM) {
   console.warn("Resend is not fully configured; unlock and message emails will be skipped.")
 }
-app.listen(port, () => console.log(`Just For You server listening on ${port}`))
+app.listen(port, () => console.log(`Just For You server listening on ${port} (${isProduction ? "production" : "development"} cookies)`))
 
 async function writeSupabase(table, values, label) {
   if (!supabase) return false
