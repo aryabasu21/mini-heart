@@ -13,7 +13,7 @@ import { Readable } from "node:stream"
 
 const app = express()
 const port = Number(process.env.PORT ?? 4000)
-const clientUrl = process.env.CLIENT_URL ?? "http://localhost:5173"
+const clientUrl = (process.env.CLIENT_URL ?? "http://localhost:5173").replace(/\/+$/, "")
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null

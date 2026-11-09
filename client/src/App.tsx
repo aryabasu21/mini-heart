@@ -22,7 +22,7 @@ import {
 import { animate, createTimeline, stagger } from "animejs";
 import { content, getProtectedMediaUrl, type FocusTrack } from "./content/config";
 
-const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const apiUrl = (import.meta.env.VITE_API_URL ?? "http://localhost:4000").replace(/\/+$/, "");
 
 function App() {
   const [unlocked, setUnlocked] = useState(false);
@@ -611,7 +611,7 @@ function Gallery() {
     setRefreshing(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL ?? "http://localhost:4000"}/api/media/list?refresh=${Date.now()}`,
+        `${apiUrl}/api/media/list?refresh=${Date.now()}`,
         { credentials: "include", cache: "no-store" },
       );
       if (!response.ok) throw new Error("gallery unavailable");
