@@ -57,9 +57,7 @@ app.post("/api/auth/unlock", unlockLimiter, async (req, res) => {
   if (!matched) return res.status(401).json({ message: "Hmm, that key didn't quite fit. Try once more ✨" })
   const token = jwt.sign({ name: matchedName }, process.env.JWT_SECRET ?? "development-secret", { expiresIn: "7d" })
   res.cookie("surprise_token", token, tokenOptions).json({ ok: true })
-  void sendUnlockEmail({ name, matchedName, device, displayMode }).catch(error => {
-    console.error("Unlock email dispatch failed", error)
-  })
+  queueEmail("unlock", () => sendUnlockEmail({ name, matchedName, device, displayMode }))
 })
 
 app.get("/api/auth/me", auth, (req, res) => res.json({ name: req.viewer.name }))
@@ -128,14 +126,12 @@ app.post("/api/messages", auth, async (req, res) => {
   }, "Message save failed")
   if (!saved) return res.status(500).json({ message: "The postbox is taking a little break." })
   res.status(201).json({ ok: true })
-  void sendMessageEmail({ name: req.viewer.name, message: parsed.data.message }).catch(error => {
-    console.error("Message email dispatch failed", error)
-  })
+  queueEmail("message", () => sendMessageEmail({ name: req.viewer.name, message: parsed.data.message }))
 })
 app.get("/api/health", (_req, res) => res.json({ ok: true }))
 
 async function sendUnlockEmail({ name, matchedName, device, displayMode }) {
-  if (!emailConfigured("unlock")) return
+  if (!emailConfigured("unlock")) return false
   try {
     const resend = new Resend(process.env.RESEND_API_KEY)
     const date = formatDate()
@@ -157,11 +153,15 @@ async function sendUnlockEmail({ name, matchedName, device, displayMode }) {
     })
     if (error) throw new Error(error.message ?? "Resend rejected the unlock email")
     console.log("Unlock email accepted by Resend", data?.id ?? "without an id")
-  } catch (error) { console.error("Unlock email failed", error) }
+    return true
+  } catch (error) {
+    console.error("Unlock email failed", error instanceof Error ? error.message : error)
+    return false
+  }
 }
 
 async function sendMessageEmail({ name, message }) {
-  if (!emailConfigured("message")) return
+  if (!emailConfigured("message")) return false
   try {
     const resend = new Resend(process.env.RESEND_API_KEY)
     const safeName = escapeHtml(name)
@@ -180,7 +180,11 @@ async function sendMessageEmail({ name, message }) {
     })
     if (error) throw new Error(error.message ?? "Resend rejected the message email")
     console.log("Message email accepted by Resend", data?.id ?? "without an id")
-  } catch (error) { console.error("Message email failed", error) }
+    return true
+  } catch (error) {
+    console.error("Message email failed", error instanceof Error ? error.message : error)
+    return false
+  }
 }
 
 function emailConfigured(kind) {
@@ -189,7 +193,28 @@ function emailConfigured(kind) {
     console.warn(`${kind} email skipped; missing environment variables: ${missing.join(", ")}`)
     return false
   }
+  if (!isValidEmailConfig()) {
+    console.warn(`${kind} email skipped; MAIL_TO or MAIL_FROM is malformed`)
+    return false
+  }
   return true
+}
+
+function isValidEmailConfig() {
+  const mailTo = process.env.MAIL_TO?.split(",").map(value => value.trim()).filter(Boolean) ?? []
+  const mailFrom = process.env.MAIL_FROM?.trim() ?? ""
+  return mailTo.length > 0
+    && mailTo.every(value => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value))
+    && (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mailFrom)
+      || /^[^@\s<>]+(?:\s+[^<]*)?\s*<[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+>$/.test(mailFrom))
+}
+
+function queueEmail(kind, send) {
+  setImmediate(() => {
+    void send().catch(error => {
+      console.error(`${kind} email dispatch failed`, error instanceof Error ? error.message : error)
+    })
+  })
 }
 
 function formatDate() {
