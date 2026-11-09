@@ -1,7 +1,7 @@
 // EDIT ME: replace placeholder copy, storage paths, and focus metadata before sharing.
 export type FocusTrack = { id: string; title: string; artist: string; duration: string; thumbnail: string; audioSrc: string; minutes: number }
 
-const apiUrl = (import.meta.env.VITE_API_URL ?? "http://localhost:4000").replace(/\/+$/, "")
+const apiUrl = (import.meta.env.PROD ? "" : import.meta.env.VITE_API_URL ?? "http://localhost:4000").replace(/\/+$/, "")
 export const getGalleryImageUrl = (path: string, fallbackIndex: number) =>
   path.startsWith("http") ? path : `${apiUrl}/api/media/${path.split("/").map(encodeURIComponent).join("/")}`
 export const getProtectedMediaUrl = (path: string) =>

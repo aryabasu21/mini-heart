@@ -22,7 +22,7 @@ import {
 import { animate, createTimeline, stagger } from "animejs";
 import { content, getProtectedMediaUrl, type FocusTrack } from "./content/config";
 
-const apiUrl = (import.meta.env.VITE_API_URL ?? "http://localhost:4000").replace(/\/+$/, "");
+const apiUrl = (import.meta.env.PROD ? "" : import.meta.env.VITE_API_URL ?? "http://localhost:4000").replace(/\/+$/, "");
 
 function App() {
   const [unlocked, setUnlocked] = useState(false);
