@@ -18,6 +18,7 @@ const supabaseUrl = process.env.SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 const storageBucket = process.env.SUPABASE_STORAGE_BUCKET ?? "surprise-media"
+app.set("trust proxy", 1)
 app.use(helmet())
 app.use(cors({ origin: clientUrl, credentials: true }))
 app.use(express.json({ limit: "20kb" }))
