@@ -62,6 +62,9 @@ app.post("/api/auth/unlock", unlockLimiter, async (req, res) => {
 })
 
 app.get("/api/auth/me", auth, (req, res) => res.json({ name: req.viewer.name }))
+app.get("/api/health", (_req, res) => {
+  res.status(200).json({ ok: true, service: "just-for-you-server" })
+})
 app.get("/api/media/list", auth, async (_req, res) => {
   if (!supabase) return res.status(503).json({ message: "Private media is not configured." })
   const bucket = supabase.storage.from(storageBucket)

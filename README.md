@@ -41,6 +41,8 @@ Run the SQL in `supabase/schema.sql` in the Supabase SQL editor before using the
 
 Use **Vercel for the client and Render for the Express server**, with Supabase for database and private storage. Vercel is a smooth free host for the Vite frontend; Render can run the existing Node server without a rewrite. Set `VITE_API_URL` on Vercel to the Render API URL, `CLIENT_URL` on Render to the Vercel URL, and put the server-only Supabase service-role key only in Render environment variables.
 
+The server exposes a public `GET /api/health` endpoint for Render health checks and uptime-monitoring cron jobs. It returns HTTP 200 with a small JSON response and does not require the unlock cookie.
+
 Cloudflare Pages is good for the client, but it does not run this Express server. Choose Cloudflare Pages only after moving the API to Supabase Edge Functions or another serverless runtime.
 
 ## Assumptions
