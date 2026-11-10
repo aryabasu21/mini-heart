@@ -659,7 +659,7 @@ function Gallery() {
             path={photos[selected]?.path ?? content.gallery[0].path}
             alt={photos[selected]?.alt ?? content.gallery[0].alt}
           />
-          <span className="gallery-shine">✦</span>
+          //<span className="gallery-shine">✦</span>
         </div>
         <div className="gallery-strip" aria-label="Photo memories">
           {photos.map((photo, index) => (
