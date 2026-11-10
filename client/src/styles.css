@@ -1009,8 +1009,11 @@ textarea:focus {
     width: 145px;
   }
   .music-pill {
-    right: 50%;
-    transform: translateX(50%);
+    left: 14px;
+    right: 14px;
+    width: calc(100vw - 28px);
+    justify-content: center;
+    transform: none;
     bottom: 14px;
     white-space: nowrap;
   }
@@ -1563,9 +1566,16 @@ textarea:focus {
     display: none;
   }
   .music-pill {
-    right: 50%;
-    transform: translateX(50%);
+    left: 50%;
+    right: auto;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    transform: translateX(-50%);
     bottom: 14px;
+    justify-content: center;
+    padding: 8px 12px;
+    gap: 8px;
+    border-radius: 30px;
   }
   .polaroids {
     gap: 7px;
@@ -3472,12 +3482,28 @@ canvas {
     margin: 0 auto;
   }
   .music-pill {
-    left: 12px;
-    right: 12px;
+    left: 50%;
+    right: auto;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    transform: translateX(-50%);
+    min-height: 0;
+    padding: 8px 12px;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 30px;
+  }
+  .music-pill .equalizer {
     width: auto;
     justify-content: center;
-    transform: none;
-    overflow: hidden;
+  }
+  .music-pill .music-action {
+    min-width: 30px;
+    min-height: 30px;
+    padding: 5px;
+  }
+  .music-pill .music-divider {
+    height: 18px;
   }
   .music-status {
     max-width: 70px;
@@ -3485,7 +3511,10 @@ canvas {
     text-overflow: ellipsis;
   }
   .volume-slider {
-    width: min(26vw, 110px);
+    flex: 0 1 auto;
+    width: 86px;
+    min-width: 70px;
+    max-width: 100px;
   }
 }
 @media (max-width: 380px) {
@@ -3521,7 +3550,15 @@ canvas {
     padding-left: 9px;
     padding-right: 9px;
   }
+  .music-pill .music-status {
+    display: none;
+  }
+  .music-pill .volume-slider {
+    width: 72px;
+    min-width: 60px;
+  }
 }
+
 @media (max-height: 620px) and (orientation: landscape) {
   .gate {
     place-items: start center;
@@ -3591,7 +3628,7 @@ canvas {
   }
   .volume-slider {
     width: 64px;
-    min-width: 64px;
+    min-width: 45px;
   }
 }
 
@@ -3671,7 +3708,9 @@ canvas {
   box-shadow: 0 14px 28px #8f6c9630;
   color: #694d70;
   text-align: left;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 .gallery-card:hover,
 .gallery-card.selected {

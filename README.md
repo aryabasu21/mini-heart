@@ -4,7 +4,7 @@ A cute, low-pressure surprise site built with React, Vite, TypeScript, Express, 
 
 ## Run locally
 
-1. Copy `server/.env.example` to `server/.env` and set `ALLOWED_NAMES`, `JWT_SECRET`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`.
+1. Copy `server/.env.example` to `server/.env` and set `ALLOWED_NAMES`, `PROFILE_RULES`, `JWT_SECRET`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`.
 2. Install from the repository root with `npm install`.
 3. Start the server with `npm run dev --workspace server`.
 4. Start the client with `npm run dev --workspace client`.
@@ -17,7 +17,7 @@ Run the SQL in `supabase/schema.sql` in the Supabase SQL editor before using the
 - Create a **private** Supabase Storage bucket matching `VITE_SUPABASE_STORAGE_BUCKET`. The Express server protects gallery/video paths with the JWT cookie and returns short-lived signed URLs; do not make this bucket public.
 - Put gallery filenames in `client/src/content/config.ts` under `gallery`.
 - To upload pictures: Supabase Dashboard -> Storage -> create `surprise-media` -> Upload files. The current config expects `her-image-01.jpg` and `her-image-02.jpg` in the bucket root.
-- To upload videos: use the same private bucket and upload `.mp4` files. The current config expects `moment-01.mp4`; videos render muted, autoplaying, looping, and inline.
+- To upload videos: use the same private bucket and upload `.mp4` files. Videos are discovered from the signed, profile-filtered media response and render muted, autoplaying, looping, and inline.
 - Update `client/src/content/config.ts` if you use folders such as `gallery/her-image-01.jpg` or `videos/moment-01.mp4`.
 - Focus mode contains pre-added local/royalty-free tracks with title, artist, duration, thumbnail, and `audioSrc`. Replace those files and metadata in `client/src/content/config.ts`.
 - Replace `audio/bg-music.wav`, `audio/focus-rain.wav`, and `audio/focus-lofi.wav` with your own royalty-free files when ready.
@@ -29,10 +29,10 @@ Run the SQL in `supabase/schema.sql` in the Supabase SQL editor before using the
 2. Add her real compliments.
 3. Replace the three gallery placeholders with your Supabase Storage media paths.
 4. Replace the included gentle placeholder at `client/public/audio/bg-music.wav` with your own royalty-free track (or update the playlist source).
-5. Update the exam-season notes in the content config.
+5. Choose a theme from `careThemes` in `client/src/content/config.ts` (`default`, `exam`, `birthday`, `missing_you`, or `celebration`), then assign its ID in `PROFILE_RULES`.
 6. Add your own captions.
 7. Expand the wish messages.
-8. Configure `ALLOWED_NAMES` server-side.
+8. Configure `PROFILE_RULES` server-side. Example: `[{\"names\":[\"Prerona\"],\"id\":\"prerona\",\"themeId\":\"missing_you\",\"mediaPrefix\":\"prerona\"},{\"names\":[\"Bageesha\"],\"id\":\"bageesha\",\"themeId\":\"birthday\",\"mediaPrefix\":\"bageesha\"},{\"names\":[\"Your Name\"],\"id\":\"owner\",\"themeId\":\"default\",\"owner\":true}]`. Upload each recipient's media beneath its matching prefix (`prerona/...`, `bageesha/...`). Owner profiles receive all media.
 9. Add Resend credentials and verify the sender domain.
 10. Set a production `CLIENT_URL`, `JWT_SECRET`, Supabase project credentials, `SUPABASE_STORAGE_BUCKET`, and `MY_NAME` (the name used in email greetings/sign-offs).
 11. In Resend, verify the domain used by `MAIL_FROM`. A personal address such as Outlook/Gmail may be rejected; use a verified domain address, for example `Just For You <hello@your-verified-domain.com>`. The server logs the Resend message ID for both unlock and postbox emails.

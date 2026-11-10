@@ -20,19 +20,38 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { animate, createTimeline, stagger } from "animejs";
-import { content, getProtectedMediaUrl, type FocusTrack } from "./content/config";
+import { careThemes, content, getProtectedMediaUrl, type CareTheme, type FocusTrack } from "./content/config";
 
 const apiUrl = (import.meta.env.PROD ? "" : import.meta.env.VITE_API_URL ?? "http://localhost:4000").replace(/\/+$/, "");
+const memoryCaptions = [
+  "a little joy, caught in the wild",
+  "one of those lovely little moments",
+  "soft light and a softer smile",
+  "proof that good days find us",
+  "a tiny memory worth keeping",
+  "this one made the day brighter",
+  "a sweet pause in the middle of everything",
+  "just a little bit of lovely",
+];
+
+function captionForMemory(path: string, index: number) {
+  let hash = index;
+  for (const character of path) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return memoryCaptions[hash % memoryCaptions.length];
+}
 
 function App() {
   const [unlocked, setUnlocked] = useState(false);
   const [viewerName, setViewerName] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
+  const unlockInFlight = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(0.55);
   const [focusTrack, setFocusTrack] = useState<FocusTrack | null>(null);
+  const [careTheme, setCareTheme] = useState<CareTheme>(content.careTheme);
   const backgroundAudio = useRef<HTMLAudioElement>(null);
   const focusAudio = useRef<HTMLAudioElement>(null);
   const handleFocus = useCallback(
@@ -50,12 +69,15 @@ function App() {
     }
   };
   const unlock = async () => {
+    if (unlockInFlight.current) return;
     const entered = name.trim();
     if (!entered) {
       setError("A tiny name is needed to open the door ✨");
       return;
     }
     setError("");
+    unlockInFlight.current = true;
+    setUnlocking(true);
     try {
       const response = await fetch(`${apiUrl}/api/auth/unlock`, {
         method: "POST",
@@ -67,12 +89,16 @@ function App() {
         const body = (await response.json().catch(() => null)) as { message?: string } | null;
         throw new Error(body?.message ?? "The little key did not fit.");
       }
+      const profile = await response.json() as { themeId?: string };
+      setCareTheme(careThemes[profile.themeId ?? "default"] ?? careThemes.default);
     } catch (unlockError) {
       setError(
         unlockError instanceof Error
           ? unlockError.message
           : "The little door is having a shy moment. Try again soon.",
       );
+      unlockInFlight.current = false;
+      setUnlocking(false);
       return;
     }
     setViewerName(entered);
@@ -126,6 +152,7 @@ function App() {
         name={name}
         setName={setName}
         error={error}
+        unlocking={unlocking}
         onUnlock={unlock}
       />
     );
@@ -163,14 +190,14 @@ function App() {
       />
       <main className="main-page">
         <Hero viewerName={viewerName} />
-        <ExamCare onFocus={handleFocus} />
+        <ExamCare theme={careTheme} onFocus={handleFocus} />
         <Gallery />
         <VideoMoments />
         <Compliments />
         <Games />
-        <Letters />
+        <Letters theme={careTheme} />
         <SayHi />
-        <FinalNote viewerName={viewerName} />
+        <FinalNote viewerName={viewerName} theme={careTheme} />
       </main>
     </div>
   );
@@ -180,11 +207,13 @@ function UnlockGate({
   name,
   setName,
   error,
+  unlocking,
   onUnlock,
 }: {
   name: string;
   setName: (value: string) => void;
   error: string;
+  unlocking: boolean;
   onUnlock: () => void;
 }) {
   return (
@@ -231,8 +260,8 @@ function UnlockGate({
               placeholder="type your name..."
               autoComplete="off"
             />
-            <button className="primary-button" type="submit">
-              Unlock <ChevronRight size={18} />
+            <button className="primary-button" type="submit" disabled={unlocking}>
+              {unlocking ? "Opening..." : "Unlock"} <ChevronRight size={18} />
             </button>
           </form>
           {error && (
@@ -378,7 +407,7 @@ function Hero({ viewerName }: { viewerName: string }) {
         </h1>
         <p className="hero-lede">{content.heroSubtext}</p>
         <div className="hero-actions">
-          <a className="scroll-cue" href="#exam">
+          <a className="scroll-cue" href={`#${content.careTheme.id}`}>
             <ArrowDown size={16} /> take a little scroll
           </a>
         </div>
@@ -423,8 +452,10 @@ function Hero({ viewerName }: { viewerName: string }) {
 }
 
 function ExamCare({
+  theme,
   onFocus,
 }: {
+  theme: CareTheme;
   onFocus: (track: FocusTrack | null) => void;
 }) {
   const [seconds, setSeconds] = useState(25 * 60);
@@ -448,33 +479,32 @@ function ExamCare({
   }, [running, onFocus]);
   const time = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
   return (
-    <section id="exam" className="section-wrap exam-section">
+    <section id={theme.id} className="section-wrap exam-section">
       <div className="section-heading">
-        <span className="section-number">01 / care package</span>
+        <span className="section-number">{theme.sectionLabel}</span>
         <h2>
-          For your exam-season <em>brain</em> 🌸
+          {theme.title} <em>{theme.titleEmphasis}</em>{" "}
+          {theme.titleEmoji}
         </h2>
-        <p>{content.examNote}</p>
+        <p>{theme.intro}</p>
       </div>
       <div className="care-grid">
         <div className="note-card pink-note">
           <div className="tape" />
           <Flower2 size={22} />
-          <p>{content.examNoteTwo}</p>
-          <div className="note-sign">— your tiny cheer squad</div>
+          <p>{theme.note}</p>
+          <div className="note-sign">{theme.noteSign}</div>
           <div className="note-stamp">
-            YOU
-            <br />
-            GOT
-            <br />
-            THIS
+            {theme.stamp.map((line) => (
+              <span key={line}>{line}<br /></span>
+            ))}
           </div>
         </div>
         <div className="pomodoro-card">
           <div className={`bunny ${running ? "bunny-hop" : ""}`}>🐰</div>
           <div className="timer-content">
             <span className="card-label">
-              {running ? "bunny is focusing" : "focus bunny"}
+              {running ? theme.runningLabel : theme.idleLabel}
             </span>
             <strong>{time}</strong>
             <div className="timer-track">
@@ -491,14 +521,14 @@ function ExamCare({
                     onFocus(null);
                   }}
                 >
-                  <Pause size={18} /> pause focus
+                  <Pause size={18} /> {theme.pauseLabel}
                 </button>
               ) : (
                 <button
                   className="focus-start"
                   onClick={() => setShowFocus(true)}
                 >
-                  <Play size={18} fill="currentColor" /> start focus mode
+                  <Play size={18} fill="currentColor" /> {theme.startLabel}
                 </button>
               )}
               <button
@@ -517,13 +547,14 @@ function ExamCare({
         </div>
       </div>
       <div className="reminder-row">
-        <span>💧 water break?</span>
-        <span>🧘 stretch those shoulders</span>
-        <span>🍪 snack science says yes</span>
+        {theme.reminders.map((reminder) => (
+          <span key={reminder}>{reminder}</span>
+        ))}
       </div>
       {showFocus && (
         <FocusModal
           onClose={() => setShowFocus(false)}
+          theme={theme}
           onStart={(track) => {
             setShowFocus(false);
             setRunning(true);
@@ -537,9 +568,11 @@ function ExamCare({
 }
 
 function FocusModal({
+  theme,
   onClose,
   onStart,
 }: {
+  theme: CareTheme;
   onClose: () => void;
   onStart: (track: FocusTrack) => void;
 }) {
@@ -560,9 +593,9 @@ function FocusModal({
         >
           ×
         </button>
-        <span className="section-number">focus setup</span>
+        <span className="section-number">{theme.modalLabel}</span>
         <h2 id="focus-title">
-          Make a tiny study <em>nest</em>
+          {theme.modalTitle} <em>nest</em>
         </h2>
         <label>
           How long?{" "}
@@ -612,9 +645,7 @@ function FocusModal({
 function Gallery() {
   const [selected, setSelected] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [photos, setPhotos] = useState<Array<{ path: string; alt: string; caption: string }>>(
-    [...content.gallery],
-  );
+  const [photos, setPhotos] = useState<Array<{ path: string; alt: string; caption: string }>>([]);
   const loadPhotos = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -627,7 +658,10 @@ function Gallery() {
         photos?: Array<{ path: string; alt: string; caption: string }>;
       };
       if (result.photos?.length) {
-        setPhotos(result.photos);
+        setPhotos(result.photos.map((photo, index) => ({
+          ...photo,
+          caption: captionForMemory(photo.path, index),
+        })));
         setSelected((current) => Math.min(current, result.photos!.length - 1));
       }
     } catch {
@@ -664,8 +698,8 @@ function Gallery() {
       <div className="memory-gallery">
         <div className="gallery-main">
           <ProtectedImage
-            path={photos[selected]?.path ?? content.gallery[0].path}
-            alt={photos[selected]?.alt ?? content.gallery[0].alt}
+            path={photos[selected]?.path ?? ""}
+            alt={photos[selected]?.alt ?? "A personal memory"}
           />
           {/* <span className="gallery-shine">✦</span> */}
         </div>
@@ -691,6 +725,24 @@ function Gallery() {
 }
 
 function VideoMoments() {
+  const [videos, setVideos] = useState<Array<{ path: string; title: string; caption: string }>>([]);
+  useEffect(() => {
+    let active = true;
+    void fetch(`${apiUrl}/api/media/list?refresh=${Date.now()}`, {
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("videos unavailable")))
+      .then((result: { videos?: Array<{ path: string; title: string; caption: string }> }) => {
+        if (active) setVideos(result.videos ?? []);
+      })
+      .catch(() => {
+        if (active) setVideos([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   return (
     <section className="section-wrap video-section">
       <div className="section-heading">
@@ -699,7 +751,7 @@ function VideoMoments() {
         <p>Quiet little clips from the private surprise shelf — always muted and easy on mobile data.</p>
       </div>
       <div className="video-grid">
-        {content.videos.map((video) => (
+        {videos.map((video) => (
           <article className="video-card" key={video.path}>
             <ProtectedVideo path={video.path} title={video.title} />
             <div className="video-card-copy">
@@ -710,6 +762,7 @@ function VideoMoments() {
           </article>
         ))}
       </div>
+      {!videos.length && <p className="gallery-empty">A few moving memories are on their way ✨</p>}
     </section>
   );
 }
@@ -717,6 +770,10 @@ function VideoMoments() {
 function useProtectedMedia(path: string) {
   const [url, setUrl] = useState("");
   useEffect(() => {
+    if (!path) {
+      setUrl("");
+      return;
+    }
     let active = true;
     let objectUrl = "";
     void fetch(getProtectedMediaUrl(path), { credentials: "include" })
@@ -742,6 +799,7 @@ function useProtectedMedia(path: string) {
 
 function ProtectedImage({ path, alt }: { path: string; alt: string }) {
   const src = useProtectedMedia(path);
+  if (!path) return <img src="/gallery-placeholder-1.svg" alt={alt} />;
   return <img src={src || "/gallery-placeholder-1.svg"} alt={alt} />;
 }
 
@@ -969,7 +1027,7 @@ function shuffleCards(cards: string[]) {
   return [...cards].sort(() => Math.random() - 0.5);
 }
 
-function Letters() {
+function Letters({ theme }: { theme: CareTheme }) {
   const [open, setOpen] = useState<string | null>(null);
   const letters = [
     [
@@ -978,9 +1036,9 @@ function Letters() {
       "You are allowed to have a soft day. Here is a tiny reminder that someone is quietly cheering for you.",
     ],
     [
-      "exam",
-      "Open when exams feel heavy",
-      "One page at a time. Drink water, unclench your shoulders, and remember that a difficult chapter is not the whole story.",
+      theme.id,
+      theme.letterTitle,
+      theme.letterBody,
     ],
     [
       "bored",
@@ -1090,7 +1148,7 @@ function SayHi() {
   );
 }
 
-function FinalNote({ viewerName }: { viewerName: string }) {
+function FinalNote({ viewerName, theme }: { viewerName: string; theme: CareTheme }) {
   return (
     <footer className="final-note section-wrap">
       <div className="confetti">✦　✧　✦　·　✧　✦</div>
@@ -1098,10 +1156,7 @@ function FinalNote({ viewerName }: { viewerName: string }) {
       <h2>
         Thanks for being <em>you</em>
       </h2>
-      <p>
-        Good luck with your exams, {viewerName}. You’ve got this — one page, one
-        breath, one tiny victory at a time.
-      </p>
+      <p>{theme.finalNote}</p>
       <div className="footer-line">
         <span>made with care</span>
         <Heart size={14} fill="currentColor" />

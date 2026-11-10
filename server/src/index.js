@@ -23,9 +23,40 @@ app.use(helmet())
 app.use(cors({ origin: clientUrl, credentials: true }))
 app.use(express.json({ limit: "20kb" }))
 app.use(cookieParser())
-const unlockLimiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 8, standardHeaders: true, legacyHeaders: false })
+const unlockLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: process.env.NODE_ENV === "production" ? 8 : 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
 const normalize = value => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase()
 const allowedNames = () => (process.env.ALLOWED_NAMES ?? "").split(",").map(normalize).filter(Boolean)
+const profileRules = () => {
+  try {
+    const parsed = JSON.parse(process.env.PROFILE_RULES ?? "[]")
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    console.error("PROFILE_RULES is not valid JSON", error instanceof Error ? error.message : error)
+    return []
+  }
+}
+const resolveProfile = normalizedName => {
+  const configured = profileRules().find(profile =>
+    Array.isArray(profile.names) && profile.names.some(name => normalize(String(name)) === normalizedName),
+  )
+  if (configured) {
+    return {
+      id: String(configured.id),
+      themeId: String(configured.themeId ?? "default"),
+      mediaPrefix: configured.owner ? null : String(configured.mediaPrefix ?? configured.id),
+      owner: Boolean(configured.owner),
+    }
+  }
+  if (allowedNames().includes(normalizedName)) {
+    return { id: "default", themeId: "default", mediaPrefix: null, owner: true }
+  }
+  return null
+}
 const isProduction = process.env.NODE_ENV === "production" || clientUrl.startsWith("https://")
 const tokenOptions = { httpOnly: true, sameSite: isProduction ? "none" : "lax", secure: isProduction, maxAge: 7 * 24 * 60 * 60 * 1000 }
 
@@ -44,8 +75,10 @@ app.post("/api/auth/unlock", unlockLimiter, async (req, res) => {
   const { name, displayMode = "browser" } = parsed.data
   const ua = new UAParser(req.headers["user-agent"])
   const device = [ua.getDevice().vendor, ua.getBrowser().name, ua.getOS().name].filter(Boolean).join(" / ") || "Unknown device"
-  const matchedName = allowedNames().find(value => value === normalize(name))
-  const matched = Boolean(matchedName)
+  const normalizedName = normalize(name)
+  const profile = resolveProfile(normalizedName)
+  const matchedName = profile ? normalizedName : null
+  const matched = Boolean(profile)
   void writeSupabase("unlock_logs", {
     name_entered: name,
     matched,
@@ -55,41 +88,67 @@ app.post("/api/auth/unlock", unlockLimiter, async (req, res) => {
     display_mode: displayMode,
   }, "Unlock log failed")
   if (!matched) return res.status(401).json({ message: "Hmm, that key didn't quite fit. Try once more ✨" })
-  const token = jwt.sign({ name: matchedName }, process.env.JWT_SECRET ?? "development-secret", { expiresIn: "7d" })
-  res.cookie("surprise_token", token, tokenOptions).json({ ok: true })
+  const token = jwt.sign({ name: matchedName, profile }, process.env.JWT_SECRET ?? "development-secret", { expiresIn: "7d" })
+  res.cookie("surprise_token", token, tokenOptions).json({
+    ok: true,
+    profileId: profile.id,
+    themeId: profile.themeId,
+    owner: profile.owner,
+  })
   queueEmail("unlock", () => sendUnlockEmail({ name, matchedName, device, displayMode }))
 })
 
-app.get("/api/auth/me", auth, (req, res) => res.json({ name: req.viewer.name }))
+app.get("/api/auth/me", auth, (req, res) => res.json({
+  name: req.viewer.name,
+  profileId: req.viewer.profile?.id ?? "default",
+  themeId: req.viewer.profile?.themeId ?? "default",
+  owner: Boolean(req.viewer.profile?.owner),
+}))
 app.get("/api/health", (_req, res) => {
   res.status(200).json({ ok: true, service: "just-for-you-server" })
 })
-app.get("/api/media/list", auth, async (_req, res) => {
+app.get("/api/media/list", auth, async (req, res) => {
   if (!supabase) return res.status(503).json({ message: "Private media is not configured." })
   const bucket = supabase.storage.from(storageBucket)
+  const viewerPrefix = req.viewer.profile?.mediaPrefix
   const listPhotos = async (prefix = "", depth = 0) => {
     const { data, error } = await bucket.list(prefix, {
       limit: 1000,
       sortBy: { column: "name", order: "asc" }
     })
     if (error) throw error
-    const result = []
+    const result = { photos: [], videos: [] }
     for (const item of data ?? []) {
       const path = prefix ? `${prefix}/${item.name}` : item.name
-      if (item.id === null && depth < 3) result.push(...await listPhotos(path, depth + 1))
+      if (item.id === null && depth < 3) {
+        const nested = await listPhotos(path, depth + 1)
+        result.photos.push(...nested.photos)
+        result.videos.push(...nested.videos)
+      }
       else if (/\.(avif|gif|jpe?g|png|webp)$/i.test(item.name)) {
-        result.push({
+        const media = {
           path,
           alt: "A personal memory",
-          caption: item.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ")
-        })
+          caption: "A little memory worth keeping"
+        }
+        result.photos.push(media)
+      } else if (/\.(mp4|webm|mov|m4v)$/i.test(item.name)) {
+        result.videos.push({ path, title: "A tiny moving memory", caption: "A little moment worth keeping" })
       }
     }
     return result
   }
   let photos
   try {
-    photos = await listPhotos()
+    const media = await listPhotos()
+    photos = media.photos
+    let videos = media.videos
+    if (viewerPrefix) {
+      photos = photos.filter(photo => photo.path === viewerPrefix || photo.path.startsWith(`${viewerPrefix}/`))
+      videos = videos.filter(video => video.path === viewerPrefix || video.path.startsWith(`${viewerPrefix}/`))
+    }
+    res.setHeader("Cache-Control", "no-store")
+    return res.json({ photos, videos })
   } catch (error) {
     console.error(`Private media listing failed for bucket "${storageBucket}":`, error.message)
     return res.status(502).json({ message: "The memory shelf is taking a tiny nap." })
@@ -101,6 +160,10 @@ app.get(/^\/api\/media\/(.+)$/, auth, async (req, res) => {
   if (!supabase) return res.status(503).json({ message: "Private media is not configured." })
   const path = req.params[0]
   if (!path || path.includes("..")) return res.status(400).json({ message: "Invalid media path." })
+  const viewerPrefix = req.viewer.profile?.mediaPrefix
+  if (viewerPrefix && path !== viewerPrefix && !path.startsWith(`${viewerPrefix}/`)) {
+    return res.status(403).json({ message: "That memory belongs to another little corner." })
+  }
   const { data, error } = await supabase.storage.from(storageBucket).createSignedUrl(path, 60 * 10)
   if (error || !data?.signedUrl) {
     console.error(`Private media URL failed for bucket "${storageBucket}" and path "${path}":`, error?.message ?? "No signed URL returned")
