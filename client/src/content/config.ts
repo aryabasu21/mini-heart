@@ -27,7 +27,7 @@ export const content = {
   wishMessages: ["You are doing better than you think ✨", "Tiny steps still count.", "Drink some water, genius 🌸", "Your future self is cheering."],
   playlist: [{ title: "A soft little tune", src: "/audio/bg-song.mp3" }],
   focusTracks: [
-    { id: "rainy-window", title: "Rainy Window", artist: "Your focus playlist", duration: "25:00", thumbnail: "/focus-rain.svg", audioSrc: "/audio/focus-rain.wav", minutes: 25 },
-    { id: "lofi-clouds", title: "Lofi Clouds", artist: "Your focus playlist", duration: "25:00", thumbnail: "/focus-cloud.svg", audioSrc: "/audio/focus-lofi.wav", minutes: 25 }
+    { id: "rainy-window", title: "Rainy Window", artist: "Your focus playlist", duration: "25:00", thumbnail: "/focus-rain.svg", audioSrc: "/audio/focus-rain.opus", minutes: 25 },
+    { id: "lofi-clouds", title: "Lofi Clouds", artist: "Your focus playlist", duration: "25:00", thumbnail: "/focus-cloud.svg", audioSrc: "/audio/focus-lofi.opus", minutes: 25 }
   ] satisfies FocusTrack[]
 } as const

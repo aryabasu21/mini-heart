@@ -88,16 +88,15 @@ function App() {
         duration: 1400,
       });
     });
-    window.setTimeout(() => {
-      setUnlocked(true);
-      window.setTimeout(() => void playBackground(), 0);
-    }, 850);
+    setUnlocked(true);
+    window.setTimeout(() => void playBackground(), 0);
   };
 
   useEffect(() => {
     const background = backgroundAudio.current;
     if (!background) return;
     background.volume = muted ? 0 : volume;
+    if (focusAudio.current) focusAudio.current.volume = muted ? 0 : volume;
   }, [volume, muted, unlocked]);
   useEffect(() => {
     if (!unlocked) return;
@@ -106,11 +105,16 @@ function App() {
     return () => window.removeEventListener("pointerdown", resume);
   }, [unlocked]);
   useEffect(() => {
-    if (focusTrack) {
+    const focus = focusAudio.current;
+    if (focusTrack && focus) {
       backgroundAudio.current?.pause();
-      void focusAudio.current?.play().catch(() => undefined);
-    } else if (unlocked) void playBackground();
-  }, [focusTrack, unlocked]);
+      focus.currentTime = 0;
+      focus.volume = muted ? 0 : volume;
+      void focus.play().catch(() => undefined);
+    } else if (!focusTrack && unlocked) {
+      void playBackground();
+    }
+  }, [focusTrack, unlocked, muted, volume]);
 
   if (!unlocked)
     return (
@@ -140,7 +144,7 @@ function App() {
           src={focusTrack.audioSrc}
           loop
           preload="auto"
-          onEnded={() => setFocusTrack(null)}
+          playsInline
         />
       )}
       <MusicPill

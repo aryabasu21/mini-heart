@@ -46,7 +46,7 @@ app.post("/api/auth/unlock", unlockLimiter, async (req, res) => {
   const device = [ua.getDevice().vendor, ua.getBrowser().name, ua.getOS().name].filter(Boolean).join(" / ") || "Unknown device"
   const matchedName = allowedNames().find(value => value === normalize(name))
   const matched = Boolean(matchedName)
-  await writeSupabase("unlock_logs", {
+  void writeSupabase("unlock_logs", {
     name_entered: name,
     matched,
     ip: req.ip,
