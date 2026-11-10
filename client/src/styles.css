@@ -217,6 +217,84 @@ textarea:focus {
 .main-page {
   opacity: 1;
 }
+.install-prompt {
+  position: fixed;
+  z-index: 40;
+  right: 20px;
+  top: max(20px, env(safe-area-inset-top));
+  bottom: auto;
+  width: min(360px, calc(100vw - 32px));
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #ff9fca99;
+  border-radius: 22px;
+  background: #2a1b3df5;
+  color: #fff;
+  box-shadow: 0 16px 38px #2a1b3d45;
+  animation: install-pop 0.35s ease-out both;
+}
+.install-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: 13px;
+  object-fit: contain;
+  box-shadow: 0 4px 12px #0002;
+}
+.install-copy {
+  min-width: 0;
+  padding-right: 12px;
+}
+.install-copy strong {
+  display: block;
+  font-size: 14px;
+}
+.install-copy p {
+  margin: 4px 0 9px;
+  color: #f7ddeb;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.install-button {
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #ff8fbe;
+  color: #2a1b3d;
+  font-size: 11px;
+  font-weight: 800;
+}
+.install-close {
+  position: absolute;
+  top: 6px;
+  right: 9px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 25px;
+  line-height: 1;
+}
+@keyframes install-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@media (max-width: 760px) {
+  .install-prompt {
+    top: max(12px, env(safe-area-inset-top));
+    right: 12px;
+    width: min(340px, calc(100vw - 24px));
+    padding: 12px 14px;
+  }
+}
 .music-pill {
   position: fixed;
   z-index: 20;
@@ -2607,6 +2685,8 @@ textarea:focus {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
+  transform-origin: center top;
   border-radius: 16px;
 }
 .gallery-shine {
@@ -3655,7 +3735,7 @@ canvas {
 }
 .video-frame {
   width: 100%;
-  max-height: 520px;
+  aspect-ratio: 9 / 13;
   overflow: hidden;
   background: #211a35;
 }
@@ -3664,9 +3744,9 @@ canvas {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.035);
+  object-position: center top;
+  transform: scale(1.16);
   transform-origin: center;
-  background: #211a35;
 }
 .video-card-copy {
   padding: 18px 20px 20px;

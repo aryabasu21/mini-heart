@@ -23,6 +23,10 @@ import { animate, createTimeline, stagger } from "animejs";
 import { careThemes, content, getProtectedMediaUrl, type CareTheme, type FocusTrack } from "./content/config";
 
 const apiUrl = (import.meta.env.PROD ? "" : import.meta.env.VITE_API_URL ?? "http://localhost:4000").replace(/\/+$/, "");
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
 const memoryCaptions = [
   "a little joy, caught in the wild",
   "one of those lovely little moments",
@@ -41,6 +45,8 @@ function captionForMemory(path: string, index: number) {
 }
 
 function App() {
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [viewerName, setViewerName] = useState("");
   const [name, setName] = useState("");
@@ -58,6 +64,44 @@ function App() {
     (track: FocusTrack | null) => setFocusTrack(track),
     [],
   );
+
+  useEffect(() => {
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
+    const revealPrompt = () => {
+      setShowInstallPrompt(true);
+    };
+    const handleInstallAvailable = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+      revealPrompt();
+    };
+    const handleInstalled = () => {
+      setInstallPrompt(null);
+      setShowInstallPrompt(false);
+    };
+    window.addEventListener("beforeinstallprompt", handleInstallAvailable);
+    window.addEventListener("appinstalled", handleInstalled);
+    const timer = window.setTimeout(revealPrompt, 3500);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleInstallAvailable);
+      window.removeEventListener("appinstalled", handleInstalled);
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showInstallPrompt || !window.matchMedia("(max-width: 760px)").matches) return;
+    const dismissTimer = window.setTimeout(() => setShowInstallPrompt(false), 18000);
+    return () => window.clearTimeout(dismissTimer);
+  }, [showInstallPrompt]);
+
+  const installApp = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+    setShowInstallPrompt(false);
+  };
 
   const playBackground = async () => {
     try {
@@ -148,16 +192,32 @@ function App() {
 
   if (!unlocked)
     return (
-      <UnlockGate
-        name={name}
-        setName={setName}
-        error={error}
-        unlocking={unlocking}
-        onUnlock={unlock}
-      />
+      <>
+        {showInstallPrompt && (
+          <InstallPrompt
+            canInstall={Boolean(installPrompt)}
+            onInstall={installApp}
+            onClose={() => setShowInstallPrompt(false)}
+          />
+        )}
+        <UnlockGate
+          name={name}
+          setName={setName}
+          error={error}
+          unlocking={unlocking}
+          onUnlock={unlock}
+        />
+      </>
     );
   return (
     <div className="app-shell">
+      {showInstallPrompt && (
+        <InstallPrompt
+          canInstall={Boolean(installPrompt)}
+          onInstall={installApp}
+          onClose={() => setShowInstallPrompt(false)}
+        />
+      )}
       <Petals />
       <audio
         ref={backgroundAudio}
@@ -200,6 +260,37 @@ function App() {
         <FinalNote viewerName={viewerName} theme={careTheme} />
       </main>
     </div>
+  );
+}
+
+function InstallPrompt({
+  canInstall,
+  onInstall,
+  onClose,
+}: {
+  canInstall: boolean;
+  onInstall: () => void;
+  onClose: () => void;
+}) {
+  const isApple = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return (
+    <aside className="install-prompt" role="dialog" aria-labelledby="install-title">
+      <button className="install-close" onClick={onClose} aria-label="Close install prompt">×</button>
+      <img src="/icon.png" alt="" className="install-icon" />
+      <div className="install-copy">
+        <strong id="install-title">Keep this little corner ✨</strong>
+        <p>
+          {canInstall
+            ? "Add it to your home screen for a softer, quicker visit."
+            : isApple
+              ? "Tap Share, then Add to Home Screen to keep it close."
+              : "Use your browser menu and choose Install app or Add to Home screen."}
+        </p>
+        {canInstall && (
+          <button className="install-button" onClick={onInstall}>Add to home screen</button>
+        )}
+      </div>
+    </aside>
   );
 }
 
@@ -812,9 +903,8 @@ function ProtectedImage({ path, alt }: { path: string; alt: string }) {
 
 function ProtectedVideo({ path, title }: { path: string; title: string }) {
   const src = useProtectedMedia(path);
-  const [aspectRatio, setAspectRatio] = useState("9 / 13");
   return (
-    <div className="video-frame" style={{ aspectRatio }}>
+    <div className="video-frame">
       <video
         src={src || undefined}
         muted
@@ -823,12 +913,6 @@ function ProtectedVideo({ path, title }: { path: string; title: string }) {
         playsInline
         preload="metadata"
         aria-label={title}
-        onLoadedMetadata={(event) => {
-          const video = event.currentTarget;
-          if (video.videoWidth && video.videoHeight) {
-            setAspectRatio(`${video.videoWidth} / ${video.videoHeight}`);
-          }
-        }}
       />
     </div>
   );
