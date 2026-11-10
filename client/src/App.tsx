@@ -93,7 +93,7 @@ function App() {
     window.setTimeout(() => {
       setUnlocked(true);
       void playBackground();
-    }, 480);
+    }, 560);
   };
 
   useEffect(() => {
