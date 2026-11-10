@@ -726,6 +726,7 @@ function Gallery() {
 
 function VideoMoments() {
   const [videos, setVideos] = useState<Array<{ path: string; title: string; caption: string }>>([]);
+  const [videosLoaded, setVideosLoaded] = useState(false);
   useEffect(() => {
     let active = true;
     void fetch(`${apiUrl}/api/media/list?refresh=${Date.now()}`, {
@@ -734,15 +735,22 @@ function VideoMoments() {
     })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("videos unavailable")))
       .then((result: { videos?: Array<{ path: string; title: string; caption: string }> }) => {
-        if (active) setVideos(result.videos ?? []);
+        if (active) {
+          setVideos(result.videos ?? []);
+          setVideosLoaded(true);
+        }
       })
       .catch(() => {
-        if (active) setVideos([]);
+        if (active) {
+          setVideos([]);
+          setVideosLoaded(true);
+        }
       });
     return () => {
       active = false;
     };
   }, []);
+  if (!videosLoaded || videos.length === 0) return null;
   return (
     <section className="section-wrap video-section">
       <div className="section-heading">
@@ -762,7 +770,6 @@ function VideoMoments() {
           </article>
         ))}
       </div>
-      {!videos.length && <p className="gallery-empty">A few moving memories are on their way ✨</p>}
     </section>
   );
 }
