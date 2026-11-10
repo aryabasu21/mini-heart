@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://mini-heart.onrender.com/api/:path*"
+      "destination": "https://api.stylnode.in:8443/api/:path*"
     }
   ]
 }
