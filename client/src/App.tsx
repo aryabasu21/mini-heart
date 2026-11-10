@@ -76,20 +76,24 @@ function App() {
       return;
     }
     setViewerName(entered);
-    requestAnimationFrame(() => {
-      createTimeline({ defaults: { ease: "out(4)" } })
-        .add(".door-panel", { translateY: -110, opacity: 0, duration: 900 })
-        .add(".gate-shell", { scale: 1.07, opacity: 0, duration: 500 }, "-=450");
-      animate(".petal", {
-        translateY: [-10, 100],
-        rotate: 180,
-        opacity: [1, 0],
-        delay: stagger(80),
-        duration: 1400,
+    window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        createTimeline({ defaults: { ease: "out(4)" } })
+          .add(".door-panel", { translateY: -110, opacity: 0, duration: 420 })
+          .add(".gate-shell", { scale: 1.07, opacity: 0, duration: 260 }, "-=220");
+        animate(".petal", {
+          translateY: [-10, 100],
+          rotate: 180,
+          opacity: [1, 0],
+          delay: stagger(35),
+          duration: 520,
+        });
       });
-    });
-    setUnlocked(true);
-    window.setTimeout(() => void playBackground(), 0);
+    }, 100);
+    window.setTimeout(() => {
+      setUnlocked(true);
+      void playBackground();
+    }, 480);
   };
 
   useEffect(() => {
