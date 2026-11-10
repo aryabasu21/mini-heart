@@ -20,9 +20,19 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { animate, createTimeline, stagger } from "animejs";
-import { careThemes, content, getProtectedMediaUrl, type CareTheme, type FocusTrack } from "./content/config";
+import {
+  careThemes,
+  content,
+  getProtectedMediaUrl,
+  type CareTheme,
+  type FocusTrack,
+} from "./content/config";
 
-const apiUrl = (import.meta.env.PROD ? "" : import.meta.env.VITE_API_URL ?? "http://localhost:4000").replace(/\/+$/, "");
+const apiUrl = (
+  import.meta.env.PROD
+    ? ""
+    : (import.meta.env.VITE_API_URL ?? "http://localhost:4000")
+).replace(/\/+$/, "");
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -40,12 +50,15 @@ const memoryCaptions = [
 
 function captionForMemory(path: string, index: number) {
   let hash = index;
-  for (const character of path) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  for (const character of path)
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
   return memoryCaptions[hash % memoryCaptions.length];
 }
 
 function App() {
-  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(
+    null,
+  );
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [viewerName, setViewerName] = useState("");
@@ -90,8 +103,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!showInstallPrompt || !window.matchMedia("(max-width: 760px)").matches) return;
-    const dismissTimer = window.setTimeout(() => setShowInstallPrompt(false), 18000);
+    if (!showInstallPrompt || !window.matchMedia("(max-width: 760px)").matches)
+      return;
+    const dismissTimer = window.setTimeout(
+      () => setShowInstallPrompt(false),
+      18000,
+    );
     return () => window.clearTimeout(dismissTimer);
   }, [showInstallPrompt]);
 
@@ -130,11 +147,15 @@ function App() {
         body: JSON.stringify({ name: entered, displayMode: "browser" }),
       });
       if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { message?: string } | null;
+        const body = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
         throw new Error(body?.message ?? "The little key did not fit.");
       }
-      const profile = await response.json() as { themeId?: string };
-      setCareTheme(careThemes[profile.themeId ?? "default"] ?? careThemes.default);
+      const profile = (await response.json()) as { themeId?: string };
+      setCareTheme(
+        careThemes[profile.themeId ?? "default"] ?? careThemes.default,
+      );
     } catch (unlockError) {
       setError(
         unlockError instanceof Error
@@ -150,7 +171,11 @@ function App() {
       requestAnimationFrame(() => {
         createTimeline({ defaults: { ease: "out(4)" } })
           .add(".door-panel", { translateY: -110, opacity: 0, duration: 420 })
-          .add(".gate-shell", { scale: 1.07, opacity: 0, duration: 260 }, "-=220");
+          .add(
+            ".gate-shell",
+            { scale: 1.07, opacity: 0, duration: 260 },
+            "-=220",
+          );
         animate(".petal", {
           translateY: [-10, 100],
           rotate: 180,
@@ -274,8 +299,18 @@ function InstallPrompt({
 }) {
   const isApple = /iphone|ipad|ipod/i.test(navigator.userAgent);
   return (
-    <aside className="install-prompt" role="dialog" aria-labelledby="install-title">
-      <button className="install-close" onClick={onClose} aria-label="Close install prompt">×</button>
+    <aside
+      className="install-prompt"
+      role="dialog"
+      aria-labelledby="install-title"
+    >
+      <button
+        className="install-close"
+        onClick={onClose}
+        aria-label="Close install prompt"
+      >
+        ×
+      </button>
       <img src="/icon.png" alt="" className="install-icon" />
       <div className="install-copy">
         <strong id="install-title">Keep this little corner ✨</strong>
@@ -287,7 +322,9 @@ function InstallPrompt({
               : "Use your browser menu and choose Install app or Add to Home screen."}
         </p>
         {canInstall && (
-          <button className="install-button" onClick={onInstall}>Add to home screen</button>
+          <button className="install-button" onClick={onInstall}>
+            Add to home screen
+          </button>
         )}
       </div>
     </aside>
@@ -320,13 +357,13 @@ function UnlockGate({
         <div className="gate-kicker">
           <Sparkles size={14} /> a tiny surprise
         </div>
-        <div className="door-panel">
+        {/* <div className="door-panel">
           <div className="door-stars">✦　·　✧</div>
           <div className="keyhole">
             <LockKeyhole size={30} />
           </div>
           <div className="door-handle" />
-        </div>
+        </div> */}
         <div className="gate-copy">
           <p className="eyebrow">Who's this surprise for?</p>
           <h1>
@@ -351,7 +388,11 @@ function UnlockGate({
               placeholder="type your name..."
               autoComplete="off"
             />
-            <button className="primary-button" type="submit" disabled={unlocking}>
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={unlocking}
+            >
               {unlocking ? "Opening..." : "Unlock"} <ChevronRight size={18} />
             </button>
           </form>
@@ -437,8 +478,17 @@ function MusicPill({
         max="1"
         step="0.01"
         value={volume}
-        onChange={(event) => onVolume(Math.min(1, Math.max(0, Number(event.target.value))))}
-        onInput={(event) => onVolume(Math.min(1, Math.max(0, Number((event.target as HTMLInputElement).value))))}
+        onChange={(event) =>
+          onVolume(Math.min(1, Math.max(0, Number(event.target.value))))
+        }
+        onInput={(event) =>
+          onVolume(
+            Math.min(
+              1,
+              Math.max(0, Number((event.target as HTMLInputElement).value)),
+            ),
+          )
+        }
         style={{ "--volume-fill": `${volume * 100}%` } as React.CSSProperties}
         aria-label="Music volume"
       />
@@ -564,8 +614,7 @@ function ExamCare({
       <div className="section-heading">
         <span className="section-number">{theme.sectionLabel}</span>
         <h2>
-          {theme.title} <em>{theme.titleEmphasis}</em>{" "}
-          {theme.titleEmoji}
+          {theme.title} <em>{theme.titleEmphasis}</em> {theme.titleEmoji}
         </h2>
         <p>{theme.intro}</p>
       </div>
@@ -577,7 +626,10 @@ function ExamCare({
           <div className="note-sign">{theme.noteSign}</div>
           <div className="note-stamp">
             {theme.stamp.map((line) => (
-              <span key={line}>{line}<br /></span>
+              <span key={line}>
+                {line}
+                <br />
+              </span>
             ))}
           </div>
         </div>
@@ -726,7 +778,9 @@ function FocusModal({
 function Gallery() {
   const [selected, setSelected] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [photos, setPhotos] = useState<Array<{ path: string; alt: string; caption: string }>>([]);
+  const [photos, setPhotos] = useState<
+    Array<{ path: string; alt: string; caption: string }>
+  >([]);
   const loadPhotos = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -735,14 +789,16 @@ function Gallery() {
         { credentials: "include", cache: "no-store" },
       );
       if (!response.ok) throw new Error("gallery unavailable");
-      const result = await response.json() as {
+      const result = (await response.json()) as {
         photos?: Array<{ path: string; alt: string; caption: string }>;
       };
       if (result.photos?.length) {
-        setPhotos(result.photos.map((photo, index) => ({
-          ...photo,
-          caption: captionForMemory(photo.path, index),
-        })));
+        setPhotos(
+          result.photos.map((photo, index) => ({
+            ...photo,
+            caption: captionForMemory(photo.path, index),
+          })),
+        );
         setSelected((current) => Math.min(current, result.photos!.length - 1));
       }
     } catch {
@@ -772,7 +828,12 @@ function Gallery() {
           A few things that made <em>me smile</em>
         </h2>
         <p>These are yours to fill with real memories from Supabase Storage.</p>
-        <button className="gallery-refresh" type="button" onClick={loadPhotos} disabled={refreshing}>
+        <button
+          className="gallery-refresh"
+          type="button"
+          onClick={loadPhotos}
+          disabled={refreshing}
+        >
           {refreshing ? "checking the shelf..." : "refresh memories"}
         </button>
       </div>
@@ -799,14 +860,18 @@ function Gallery() {
         </div>
       </div>
       {photos.length === 0 && (
-        <p className="gallery-empty">A few little memories are on their way ✨</p>
+        <p className="gallery-empty">
+          A few little memories are on their way ✨
+        </p>
       )}
     </section>
   );
 }
 
 function VideoMoments() {
-  const [videos, setVideos] = useState<Array<{ path: string; title: string; caption: string }>>([]);
+  const [videos, setVideos] = useState<
+    Array<{ path: string; title: string; caption: string }>
+  >([]);
   const [videosLoaded, setVideosLoaded] = useState(false);
   useEffect(() => {
     let active = true;
@@ -814,13 +879,21 @@ function VideoMoments() {
       credentials: "include",
       cache: "no-store",
     })
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error("videos unavailable")))
-      .then((result: { videos?: Array<{ path: string; title: string; caption: string }> }) => {
-        if (active) {
-          setVideos(result.videos ?? []);
-          setVideosLoaded(true);
-        }
-      })
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : Promise.reject(new Error("videos unavailable")),
+      )
+      .then(
+        (result: {
+          videos?: Array<{ path: string; title: string; caption: string }>;
+        }) => {
+          if (active) {
+            setVideos(result.videos ?? []);
+            setVideosLoaded(true);
+          }
+        },
+      )
       .catch(() => {
         if (active) {
           setVideos([]);
@@ -836,8 +909,13 @@ function VideoMoments() {
     <section className="section-wrap video-section">
       <div className="section-heading">
         <span className="section-number">02.5 / little moving moments</span>
-        <h2>Some things are nicer <em>in motion</em></h2>
-        <p>Quiet little clips from the private surprise shelf — always muted and easy on mobile data.</p>
+        <h2>
+          Some things are nicer <em>in motion</em>
+        </h2>
+        <p>
+          Quiet little clips from the private surprise shelf — always muted and
+          easy on mobile data.
+        </p>
       </div>
       <div className="video-grid">
         {videos.map((video) => (
@@ -951,7 +1029,9 @@ function Compliments() {
 
 function Games() {
   const [answer, setAnswer] = useState("");
-  const [memoryCards, setMemoryCards] = useState(() => shuffleCards(["🌸", "🌙", "🌸", "🐰", "🌙", "🐰"]));
+  const [memoryCards, setMemoryCards] = useState(() =>
+    shuffleCards(["🌸", "🌙", "🌸", "🐰", "🌙", "🐰"]),
+  );
   const [memorySelected, setMemorySelected] = useState<number[]>([]);
   const [memoryMatched, setMemoryMatched] = useState<number[]>([]);
   const [memoryLocked, setMemoryLocked] = useState(false);
@@ -1031,7 +1111,9 @@ function Games() {
             <button
               className="game-reset"
               onClick={() => {
-                setMemoryCards(shuffleCards(["🌸", "🌙", "🌸", "🐰", "🌙", "🐰"]));
+                setMemoryCards(
+                  shuffleCards(["🌸", "🌙", "🌸", "🐰", "🌙", "🐰"]),
+                );
                 setMemorySelected([]);
                 setMemoryMatched([]);
                 setMemoryLocked(false);
@@ -1046,10 +1128,20 @@ function Games() {
           <div className="memory-grid">
             {memoryCards.map((card, index) => (
               <button
-                className={memorySelected.includes(index) || memoryMatched.includes(index) ? "revealed" : ""}
+                className={
+                  memorySelected.includes(index) ||
+                  memoryMatched.includes(index)
+                    ? "revealed"
+                    : ""
+                }
                 key={index}
                 onClick={() => {
-                  if (memoryLocked || memoryMatched.includes(index) || memorySelected.includes(index)) return;
+                  if (
+                    memoryLocked ||
+                    memoryMatched.includes(index) ||
+                    memorySelected.includes(index)
+                  )
+                    return;
                   const next = [...memorySelected, index];
                   setMemorySelected(next);
                   if (next.length !== 2) return;
@@ -1068,7 +1160,9 @@ function Games() {
                   }
                 }}
               >
-                {memorySelected.includes(index) || memoryMatched.includes(index) ? card : "✦"}
+                {memorySelected.includes(index) || memoryMatched.includes(index)
+                  ? card
+                  : "✦"}
               </button>
             ))}
           </div>
@@ -1076,7 +1170,9 @@ function Games() {
         <div className="game-card mini-game-card star-pocket-card">
           <div className="game-top">
             <span>✨ pocket stars</span>
-            <span className="game-score">{starMessage ? "opened" : "pick one"}</span>
+            <span className="game-score">
+              {starMessage ? "opened" : "pick one"}
+            </span>
           </div>
           <p>Pick a little star and see what it has been saving for you.</p>
           <div className="star-pocket">
@@ -1116,11 +1212,7 @@ function Letters({ theme }: { theme: CareTheme }) {
       "Open when you need a smile",
       "You are allowed to have a soft day. Here is a tiny reminder that someone is quietly cheering for you.",
     ],
-    [
-      theme.id,
-      theme.letterTitle,
-      theme.letterBody,
-    ],
+    [theme.id, theme.letterTitle, theme.letterBody],
     [
       "bored",
       "Open when you are bored",
@@ -1219,7 +1311,8 @@ function SayHi() {
               placeholder="a tiny hello, a snack recommendation, or a little update..."
             />
             <button className="primary-button" type="submit" disabled={sending}>
-              {sending ? "Tucking it away..." : "Send a little note"} <Send size={16} />
+              {sending ? "Tucking it away..." : "Send a little note"}{" "}
+              <Send size={16} />
             </button>
             {error && <small className="form-error">{error}</small>}
           </form>
@@ -1229,7 +1322,13 @@ function SayHi() {
   );
 }
 
-function FinalNote({ viewerName, theme }: { viewerName: string; theme: CareTheme }) {
+function FinalNote({
+  viewerName,
+  theme,
+}: {
+  viewerName: string;
+  theme: CareTheme;
+}) {
   return (
     <footer className="final-note section-wrap">
       <div className="confetti">✦　✧　✦　·　✧　✦</div>

@@ -110,6 +110,7 @@ em {
   border-radius: 34px;
   padding: 31px 25px 27px;
   box-shadow: 0 16px 55px #b96c8420;
+  margin-top: 20px;
 }
 .gate-copy h1 {
   font-size: 38px;
@@ -3335,7 +3336,7 @@ textarea:focus {
 .gate-copy {
   position: relative;
   z-index: 3;
-  margin: -1px 14px 0;
+  margin: 20px 14px 0;
   border: 1px solid #ffffff66;
   border-radius: 28px;
   padding: 28px 28px 25px;
