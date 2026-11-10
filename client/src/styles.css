@@ -2306,6 +2306,16 @@ textarea:focus {
 .bunny-cup:after {
   display: none;
 }
+.hero-bunny-image {
+  position: absolute;
+  inset: 5% 5% 5%;
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  object-position: center;
+  filter: saturate(1.05);
+  z-index: 1;
+}
 .cup-glow {
   position: absolute;
   width: 115px;

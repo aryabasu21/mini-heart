@@ -505,21 +505,11 @@ function Hero({ viewerName }: { viewerName: string }) {
       </div>
       <div className="orb-wrap">
         <Tilt className="bunny-cup">
-          <div className="cup-glow" />
-          <div className="bunny-ear ear-left" />
-          <div className="bunny-ear ear-right" />
-          <div className="bunny-face">
-            <span className="bunny-eye eye-left" />
-            <span className="bunny-eye eye-right" />
-            <span className="bunny-nose">·ᴗ·</span>
-            <span className="bunny-cheek cheek-left">●</span>
-            <span className="bunny-cheek cheek-right">●</span>
-          </div>
-          <div className="bunny-bow">♡</div>
-          <div className="cup">
-            <i className="cup-tea" />
-            <i className="cup-handle" />
-          </div>
+          <img
+            className="hero-bunny-image"
+            src="/hero-bunny.png?v=3"
+            alt="A cute bunny holding a carrot"
+          />
           <div className="garden-spark spark-one">✦</div>
           <div className="garden-spark spark-two">✧</div>
           {/* <div className="garden-bubble">
